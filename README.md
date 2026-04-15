@@ -210,7 +210,7 @@ AutoGluon использовался для:
 pip install -r requirements.txt
 
 3. Запустить ноутбук:
-notebook.ipynb
+house_price_solution.ipynb (лучшее решение v10.0)
 
 
 ---
