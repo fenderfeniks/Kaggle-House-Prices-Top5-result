@@ -1,5 +1,12 @@
 # Kaggle House Prices — Top 5% Solution
 
+![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python&logoColor=white)
+![AutoGluon](https://img.shields.io/badge/AutoGluon-Ensemble-blueviolet)
+![Optuna](https://img.shields.io/badge/Optuna-Tuning-00BFFF)
+![Kaggle](https://img.shields.io/badge/Kaggle-Top%205%25-20BEFF?logo=kaggle&logoColor=white)
+![Score](https://img.shields.io/badge/RMSE-0.1198-brightgreen)
+![License](https://img.shields.io/badge/License-MIT-green)
+
 В этом проекте решается задача предсказания стоимости недвижимости из соревнования Kaggle **House Prices: Advanced Regression Techniques**.
 
 Цель — построить устойчивую модель с хорошей обобщающей способностью, а не просто добиться максимального результата на локальной валидации.
