@@ -83,7 +83,7 @@ def analyze_numeric(df: pd.DataFrame, cols: list = None, target: str = None):
     return pd.DataFrame(summary).set_index('column')
 
 
-def plot_distributions(df: pd.DataFrame, cols: list = None, n_cols: int = 3):
+def plot_distributions(df: pd.DataFrame, cols: list = None, n_cols: int = 3, output_dir: str = None):
     """Гистограммы + boxplot для числовых признаков"""
     if cols is None:
         cols = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -120,7 +120,7 @@ def plot_distributions(df: pd.DataFrame, cols: list = None, n_cols: int = 3):
             axes[(idx // n_cols) * 2 + r, idx % n_cols].set_visible(False)
 
     plt.tight_layout()
-    plt.savefig('distributions.png', dpi=150, bbox_inches='tight')
+    plt.savefig(f'{output_dir}/distributions.png', dpi=150, bbox_inches='tight')
     plt.show()
 
 # plot_distributions(df, cols=['age', 'salary', 'experience'])
