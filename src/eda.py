@@ -8,6 +8,23 @@ import seaborn as sns
 
 
 def full_eda_report(df: pd.DataFrame) -> tuple[list[Any], list[Any]]:
+    """
+        Собирает базовую статистику по всему датафрейму одной функцией.
+
+        Parameters
+        ----------
+        df : pandas
+
+        Returns
+        -------
+       tuple (num_cols, cat_cols)
+
+        Examples
+        --------
+        >>> num_cols, cat_cols = full_eda_report(df)
+        """
+
+
     """Полный EDA отчёт в одной функции"""
     print("=" * 60)
     print(f"DATASET OVERVIEW")
@@ -41,15 +58,30 @@ def full_eda_report(df: pd.DataFrame) -> tuple[list[Any], list[Any]]:
 
     return num_cols, cat_cols
 
-    # for col in cat_cols[:5]:  # первые 5
-    #     n_unique = df[col].nunique()
-    #     print(f"\n {col}: {n_unique} unique values")
-    #     if n_unique <= 10:
-    #         print(f"    {df[col].value_counts().to_dict()}")
 
 
 def analyze_numeric(df: pd.DataFrame, cols: list = None, target: str = None):
-    """Детальный анализ числовых колонок"""
+    """
+            Детально анализирует числовые колонки.
+
+            Parameters
+            ----------
+            df : pandas
+
+            cols: list (список числовык фичей)
+
+            target: str (Название колонки таргета)
+
+            Returns
+            -------
+            -
+
+            Examples
+            --------
+            >>> analyze_numeric(df, cols=num_cols, target='SalePrice')
+            """
+
+
     if cols is None:
         cols = df.select_dtypes(include=[np.number]).columns.tolist()
         if target and target in cols:
@@ -84,7 +116,32 @@ def analyze_numeric(df: pd.DataFrame, cols: list = None, target: str = None):
 
 
 def plot_distributions(df: pd.DataFrame, cols: list = None, n_cols: int = 3, output_dir: str = None):
-    """Гистограммы + boxplot для числовых признаков"""
+    """
+                Визуализирует числовые фичи 2 графиками: Гистограмма + boxplot
+                Сохраняте графики в одно изображение если указана дирректория
+
+                Parameters
+                ----------
+                df : pandas
+
+                cols : list Список названий числовых фичей
+
+                n_cols: int Количество графиков в одно строке/количество столбцов
+
+                output_dir: str Дирректория в которую сохранять изображение(если не указана, сохранения не будет)
+
+                Returns
+                -------
+                -
+
+                неявный return (Сохранение изображения)
+
+                Examples
+                --------
+                >>> plot_distributions(df, cols=['age', 'salary', 'experience'])
+                """
+
+
     if cols is None:
         cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
@@ -120,15 +177,37 @@ def plot_distributions(df: pd.DataFrame, cols: list = None, n_cols: int = 3, out
             axes[(idx // n_cols) * 2 + r, idx % n_cols].set_visible(False)
 
     plt.tight_layout()
-    plt.savefig(f'{output_dir}/distributions.png', dpi=150, bbox_inches='tight')
+    if output_dir is not None:
+        plt.savefig(f'{output_dir}/distributions.png', dpi=150, bbox_inches='tight')
     plt.show()
 
-# plot_distributions(df, cols=['age', 'salary', 'experience'])
 
 
 def plot_correlation_matrix(df: pd.DataFrame, target: str = None,
                              method: str = 'pearson', figsize=(14, 12)):
-    """Красивая матрица корреляций"""
+    """
+                    Построение матрицы корреляции
+
+                    Parameters
+                    ----------
+                    df : pandas
+
+                    target : str Название целевой переменной
+
+                    method: str метод анализа ('pearson', 'spearman', 'kendall')
+
+                    figsize: tuple Размер в plt для построения матрицы
+
+                    Returns
+                    -------
+                    -
+
+                    Examples
+                    --------
+                    >>> corr_matrix = plot_correlation_matrix(df, target='SalePrice')
+                    """
+
+
     num_df = df.select_dtypes(include=[np.number])
     corr = num_df.corr(method=method)
 
@@ -162,11 +241,32 @@ def plot_correlation_matrix(df: pd.DataFrame, target: str = None,
 
     return corr
 
-# corr_matrix = plot_correlation_matrix(df, target='price')
+
 
 
 def analyze_categorical(df: pd.DataFrame, target: str = None, max_categories: int = 20):
-    """Анализ категориальных переменных с target encoding preview"""
+    """
+                       Анализирует категориальные переменные:
+                       values_count внутри фичи
+                       Сравнение с таргетом
+
+                       Parameters
+                       ----------
+                       df : pandas
+
+                       target : str Название целевой переменной
+
+                       max_categories: int Максимальное количество категорий внутри фичи для анализа
+
+                       Returns
+                       -------
+                       -
+
+                       Examples
+                       --------
+                       >>> analyze_categorical(df, target='price')
+                       """
+
     cat_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
 
     for col in cat_cols:
@@ -188,11 +288,31 @@ def analyze_categorical(df: pd.DataFrame, target: str = None, max_categories: in
                 print(f"\n  Target '{target}' by {col}:")
                 print(group_stats.to_string())
 
-# analyze_categorical(df, target='price')
+
 
 
 def detect_outliers(df: pd.DataFrame, cols: list = None, method: str = 'iqr'):
-    """Обнаружение выбросов — IQR или Z-score"""
+    """
+                           Выявляет выбросы выбранным методом: IQR, Z-index
+
+                           Parameters
+                           ----------
+                           df : pandas
+
+                           cols : list Названия числовых фичей
+
+                           method: str Метод для выявления выбросов ('iqr', 'zscore', 'percentile')
+
+                           Returns
+                           -------
+                           -
+
+                           Examples
+                           --------
+                           >>>  outliers = detect_outliers(df, method='iqr')
+                           >>>  print(outliers[outliers.n_outliers > 0].to_string())
+                           """
+
     if cols is None:
         cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
@@ -225,5 +345,3 @@ def detect_outliers(df: pd.DataFrame, cols: list = None, method: str = 'iqr'):
 
     return pd.DataFrame(results).T
 
-# outliers = detect_outliers(df, method='iqr')
-# print(outliers[outliers.n_outliers > 0].to_string())

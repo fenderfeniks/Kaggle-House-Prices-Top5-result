@@ -6,6 +6,14 @@ import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
 def quality_to_num(series: pd.Series) -> pd.Series:
+    """
+               Функция преобразует категориальные фичи качества с определенными метками в числовые фичи
+
+               Examples
+               --------
+               >>>  df[f"{col}_num"] = quality_to_num(df[col])
+                        """
+
     series = series.copy()
     mapping = {
         "Ex": 5,
@@ -19,17 +27,32 @@ def quality_to_num(series: pd.Series) -> pd.Series:
 
 
 def new_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+                   Функция добавляет фичи в датафрейм возвращая итоговый + новые фичи (вместе)
+
+                   Parameters
+                   ----------
+                   df : pandas.DataFrame
+
+                   Returns
+                   -------
+                   df : pandas.DataFrame
+
+                   Examples
+                   --------
+                   >>>  df = new_features(X)
+                            """
+
     df = df.copy()
 
+    # Base
     df["OverallScore"] = df["OverallQual"] * df["OverallCond"]
-
     df["HouseAge"] = df["YrSold"] - df["YearBuilt"]
     df["RemodAge"] = df["YrSold"] - df["YearRemodAdd"]
 
-    df["HasRemode"] = ((df["HouseAge"] - df["RemodAge"]) > 0).astype(int)
 
+    # Square
     df["TotalHouseSquare"] = df["TotalBsmtSF"] + df["GrLivArea"]
-
     df["TotalPorchSF"] = (
         df["OpenPorchSF"]
         + df["EnclosedPorch"]
@@ -37,36 +60,18 @@ def new_features(df: pd.DataFrame) -> pd.DataFrame:
         + df["ScreenPorch"]
         + df["WoodDeckSF"]
     )
-
     df["TotalBath"] = (
         df["FullBath"]
         + df["BsmtFullBath"]
         + 0.5 * df["HalfBath"]
         + 0.5 * df["BsmtHalfBath"]
     )
-
     df['TotalSF'] = df['TotalBsmtSF'] + df['1stFlrSF'] + df['2ndFlrSF']
-    df['OverallQual_sq'] = df['OverallQual'] ** 2
     df['LotRatio'] = df['GrLivArea'] / df['LotArea']
-    df['IsNew'] = (df['YearBuilt'] == df['YrSold']).astype(int)
-
     df["TotalLivingArea"] = df["GrLivArea"] + df["TotalBsmtSF"]
 
-
-
-    quality_cols = [
-        "ExterQual",
-        "ExterCond",
-        "BsmtQual",
-        "BsmtCond",
-        "HeatingQC",
-        "KitchenQual",
-        "FireplaceQu",
-        "GarageQual",
-        "GarageCond",
-        "PoolQC",
-    ]
-
+    # Bool Features
+    df['IsNew'] = (df['YearBuilt'] == df['YrSold']).astype(int)
     df["HasPool"] = (df["PoolArea"] > 0).astype(int)
     df["HasGarage"] = (df["GarageArea"] > 0).astype(int)
     df["HasFireplace"] = (df["Fireplaces"] > 0).astype(int)
@@ -83,9 +88,24 @@ def new_features(df: pd.DataFrame) -> pd.DataFrame:
     ).astype(int)
     df["HasFence"] = (df["Fence"] != "NA").astype(int)
     df["HasAlley"] = (df["Alley"] != "NA").astype(int)
+    df["HasRemode"] = ((df["HouseAge"] - df["RemodAge"]) > 0).astype(int)
     # df["Has2ndExterion"] = (df['Exterion2nd'] != "NA").astype(int)
     # df["Has2ndBsmtFinType"] = (df["BsmtFinType2"] != "NA").astype(int)
 
+
+    # Преобразования с качеством ремонта и т.п.
+    quality_cols = [
+        "ExterQual",
+        "ExterCond",
+        "BsmtQual",
+        "BsmtCond",
+        "HeatingQC",
+        "KitchenQual",
+        "FireplaceQu",
+        "GarageQual",
+        "GarageCond",
+        "PoolQC",
+    ]
 
     df["TotalQualitySum"] = 0
     for col in quality_cols:
@@ -96,10 +116,8 @@ def new_features(df: pd.DataFrame) -> pd.DataFrame:
     for col in quality_cols:
         df["TotalQualityMulti"] *= df[f"{col}_num"].apply(lambda x: x if x != 0 else 1)
     df["TotalQualityMulti"] = df["TotalQualityMulti"].clip(upper=350000)
-
     df['Quality*Square'] = df["TotalHouseSquare"] * df["TotalQualitySum"]
     df['QualityMulty*Square'] = df["TotalHouseSquare"] * df["TotalQualityMulti"]
-
     df["QualityArea"] = df["OverallQual"] * df["GrLivArea"]
     df["GarageAreaPerCar"] = df["GarageArea"] / (df["GarageCars"] + 1)
 
@@ -116,18 +134,24 @@ def new_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_log_target(df: pd.DataFrame, target_col: str = "SalePrice") -> pd.DataFrame:
+    """
+                       Функция принимает весь DF логарифмирует Таргет и возвращает весь DF
+                                """
     df = df.copy()
     df[target_col] = np.log1p(df[target_col])
     return df
 
 class FeatureEngineer(BaseEstimator, TransformerMixin):
+    """
+           Класс для встраивания в пайплайн
+                    """
 
     def fit(self, X, y=None):
         return self  # ничего не считаем, просто возвращаем self
 
     def transform(self, X, y=None):
         df = new_features(X)
-        self.feature_names_out_ = df.columns.tolist()  # ПОСЛЕ new_features, не до
+        self.feature_names_out_ = df.columns.tolist()  # ПОСЛЕ new_features
         return df
 
     def get_feature_names_out(self, input_features=None):
