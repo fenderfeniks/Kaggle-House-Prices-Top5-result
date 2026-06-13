@@ -135,6 +135,10 @@ class HousePreprocessor(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, y=None):
-        df = preprocessing(X, self.stats_)  # без is_train
+        df = preprocessing(X, self.stats_)
         df = apply_borders(df, self.borders_)
+        self.feature_names_out_ = df.columns.tolist()
         return df
+
+    def get_feature_names_out(self, input_features=None):
+        return self.feature_names_out_
