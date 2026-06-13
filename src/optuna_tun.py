@@ -68,6 +68,18 @@ PARAM_SPACES = {
 }
 
 def objective(trial, model_class, X_train, y_train, cv_folds=10):
+    """
+    
+    :param trial:   количество триалов
+    :param model_class:   класс модели (например CatBoostRegressor, LGBMRegressor, XGBRegressor)
+    :param X_train: матрица параметров тренировочной выборки
+    :param y_train:  вектор ответов тренировочной выборки
+    :param cv_folds:   количество фолдов для кроссвалидации
+    
+    :return: 
+    rmse(metric)
+    """
+
     # получаем параметры для конкретной модели
     model_name = model_class.__name__
     params = PARAM_SPACES[model_name](trial)
@@ -82,10 +94,29 @@ def objective(trial, model_class, X_train, y_train, cv_folds=10):
 
 
 def run_optuna(model_class, X_train, y_train, n_trials=100, cv_folds=10):
+    """
+
+    :param model_class: класс модели (например CatBoostRegressor, LGBMRegressor, XGBRegressor)
+    :param X_train: матрица параметров тренировочной выборки
+    :param y_train: вектор ответов тренировочной выборки
+    :param n_trials: количество триалов
+    :param cv_folds: количество фолдов для кроссвалидации
+    :return:
+    study
+    :Example:
+    study_catboost = run_optuna(CatBoostRegressor, X_train, y_train, n_trials=20)
+    """
     model_name = model_class.__name__
     supports_early_stopping = model_name in ('LGBMRegressor', 'CatBoostRegressor', 'XGBRegressor')
 
     def objective_with_mlflow(trial):
+        """
+
+        :param trial: количество триалов
+        :return:
+        rmse(метрика)
+        """
+
         with mlflow.start_run(run_name=f"{model_name}_trial_{trial.number}", nested=True):
             mlflow.set_tag("tuning", "optuna")
             params = PARAM_SPACES[model_name](trial)
@@ -160,7 +191,17 @@ def run_optuna(model_class, X_train, y_train, n_trials=100, cv_folds=10):
 
 
 def tune_meta_model(oof_preds, y_train, n_trials=50, cv=10):
-    """Тюнинг мета-модели на OOF предсказаниях L1."""
+    """
+
+    :param oof_preds: редсказание l1 моделей
+    :param y_train: вектров ответов
+    :param n_trials: количество триалов
+    :param cv: количество фолдов для кроссвалидации
+    :return:
+    study
+    :Example:
+    study = tune_meta_model(oof_preds, y_train, n_trials=n_trials, cv=cv)
+    """
 
     def objective(trial):
         params = {

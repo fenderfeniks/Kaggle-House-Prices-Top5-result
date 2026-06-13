@@ -110,7 +110,39 @@ def model_train(model, X_train, y_train, notes: str = None, feature_engineering:
 
 
 def make_oof_predictions(models, X_train, y_train, X_test, cv=10):
-    """Генерирует OOF предсказания для каждой L1 модели."""
+    """
+                       Генерирует OOF предсказания для каждой L1 модели, c mlflow логированием
+
+                       # Логирование:
+                       log_metric = ("rmse_cv", rmse)
+
+                       log_model(pipe, "pipeline")
+
+                       Parameters
+                       ----------
+                       model : модель поддерживающая fir/predict обученная(будет обучаться на новых данных)/необученная
+
+                       X_train: pd.DataFrame Матрица параметров/объектов
+
+                       y_train: pd.Series вектор ответов(таргетов)
+
+                       X_test: pd.DataFrame Матрица объектов признаков для тестовой выборки(без таргета)
+
+                       cv: int =5  количество фолдов
+
+                       Returns
+                       -------
+                       oof_preds предсказания для трейн выборки(для тюнинга)
+
+                       test_preds предсказания для тестовой выборки для передачи в l2
+
+                       Examples
+                       --------
+                       >>>  oof_preds, test_preds = make_oof_predictions(
+                                l1_models, X_train, y_train, X_test, cv=cv
+                            )
+                                """
+
     kf = KFold(n_splits=cv, shuffle=True, random_state=RANDOM_SEED)
 
     oof_preds = np.zeros((len(X_train), len(models)))
@@ -128,8 +160,8 @@ def make_oof_predictions(models, X_train, y_train, X_test, cv=10):
             oof_preds[:, i] = cross_val_predict(pipe, X_train, y_train, cv=kf)
 
             rmse = root_mean_squared_error(y_train, oof_preds[:, i])
-            mlflow.log_metric("rmsle_oof", rmse)
-            print(f"L1 {name} OOF RMSLE: {rmse:.4f}")
+            mlflow.log_metric("rmse_oof", rmse)
+            print(f"L1 {name} OOF RMSE: {rmse:.4f}")
 
             # обучаем на всём трейне для предсказания теста
             pipe.fit(X_train, y_train)
@@ -141,6 +173,59 @@ def make_oof_predictions(models, X_train, y_train, X_test, cv=10):
 
 
 def run_stacking(l1_models, X_train, y_train, X_test, cv=10, tune_meta=True, n_trials=50):
+    """
+                       Функция выполняет процесс обучения, тюнинга и формирования предикшена для тестовой выборки
+
+                       # Логирование
+                       params = model.get_params()
+
+                       log_metric = ("rmse_cv", rmse)
+
+                       log_model(meta_model, "meta_model")
+
+                       Parameters
+                       ----------
+                       l1_model: list список моделей
+                       например:  формат ('name', model, params)
+                       l1_models = [
+                                    ('catboost', CatBoostRegressor(**catboost_best_params, verbose=0), catboost_best_params),
+                                    ('lgbm',     lgb.LGBMRegressor(**lgbm_best_params, verbose=-1),         lgbm_best_params),
+                                    ('xgb',      XGBRegressor(**xgb_best_params, verbosity=0),           xgb_best_params),
+                                    ('ridge',    Ridge(**ridge_best_pararms),                ridge_best_pararms),
+                                    ('elasticnet', ElasticNet(**elasticnet_best_pararms),         elasticnet_best_pararms),
+]
+
+                       X_train: pd.DataFrame Матрица параметров/объектов
+
+                       y_train: pd.Series вектор ответов(таргетов)
+
+                       X_test: pd.DataFrame Матрица объектов признаков для тестовой выборки(без таргета)
+
+                       cv: int =5  количество фолдов
+
+                       tune_meta: bool  параметр отвечающий за то будет ли тюниться модель
+
+                       n_trials: int количество триалов для optuna
+
+                       Returns
+                       -------
+                       y_test_pred финальное предсказание после l2 ( после expm1)
+                       meta_model модель l2
+                       oof_preds предсказания моделей после l1 на трейн
+                       test_preds: предсказания моделей после l1 на тест
+
+                       Examples
+                       --------
+                       >>>  y_test_pred, meta_model, oof_preds, test_preds = run_stacking(
+                                    l1_models=l1_models,
+                                    X_train=X_train,
+                                    y_train=y_train,
+                                    X_test=X_test,
+                                    cv=10,
+                                    tune_meta=True,
+                                    n_trials=50
+                                )
+                                """
 
     with mlflow.start_run(run_name="stacking"):
         mlflow.set_tag("method", "2-level stacking + optuna meta")
